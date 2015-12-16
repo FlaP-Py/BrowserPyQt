@@ -1,0 +1,182 @@
+#!/usr/bin/python
+import sys
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
+from PyQt4.QtWebKit import *
+app=QApplication(sys.argv)
+a=1
+class tab(QWidget):
+	def __init__(self, par=None):
+		super(tab, self).__init__(par)
+		self.updateUI()
+
+	def updateUI(self):
+		self.setWindowTitle("Fl@ppY")
+		self.resize(1360, 768)
+		#TAB WIDGET
+		self.tabWidget=QTabWidget(self)
+		self.tab=widget(self)
+		self.tabWidget.setTabShape(QTabWidget.Triangular)
+		self.tabWidget.setTabsClosable(True)
+		#CLOSE BUTTON OF TAB
+		self.connect(self.tabWidget, SIGNAL("tabCloseRequested(int)"), self.closeTab)
+		#ADDING FIRST TAB
+		self.tabWidget.addTab(self.tab,'New Tab')
+		#NEW TAB ACTION
+		self.addTabAction=QAction(QIcon('ico.png'),"NewTab",self)
+		self.addTabAction.setShortcut("Ctrl+T")
+		self.addAction(self.addTabAction)
+		self.connect(self.addTabAction,SIGNAL("triggered()"),self.addTab)
+		#CLOSE TAB ACTION
+		self.closeTabAction=QAction(QIcon('ico.png'),"CloseTab",self)
+		self.closeTabAction.setShortcut("Ctrl+W")
+		self.addAction(self.closeTabAction)
+		self.connect(self.closeTabAction,SIGNAL("triggered()"),self.closeTab)
+		#CLOSE ALL ACTION
+		self.closeAllAction=QAction(QIcon('quit.png'),'Close All',self)
+		self.closeAllAction.setShortcut('Ctrl+Shift+Q')
+		self.connect(self.closeAllAction, SIGNAL("triggered()"),self.close)
+		self.addAction(self.closeAllAction)
+		
+	def closeEvent(self,event):
+		if self.tabWidget.count()>1:
+			#DIALOGUE BOX
+			reply=QMessageBox.question(self,"Many Working Tabs","Do You Want To Close All Tabs",QMessageBox.Yes,QMessageBox.No)
+			if reply == QMessageBox.Yes:
+				event.accept()
+			else:
+				event.ignore()
+		else:
+			event.accept()
+
+	def closeTab(self, index=None):
+		if index!=None:
+			self.tabWidget.removeTab(index)
+			if self.tabWidget.count()==0:
+				app.quit()
+		else:
+			self.tabWidget.removeTab(self.tabWidget.currentIndex())
+			if self.tabWidget.count()==0:
+				app.quit()
+
+	def addTab(self):
+		global a
+		a=a+1
+		self.tab=widget(self)
+		self.tabWidget.addTab(self.tab,"New Tab")
+		self.tabWidget.setCurrentWidget(self.tab)
+				
+class webView(QWebView):
+	def __init__(self, par=None):
+		super(webView, self).__init__(par)
+
+class widget(QMainWindow):
+	def __init__(self, par=None):
+		super(widget, self).__init__(par)
+		self.updateUI(par)
+
+	def sizeHint(self):
+		#CHANGING DEFAULT SIZE OF QMAINWINDOW
+		width=1360
+		height=710
+		return QSize(width,height)
+
+	def updateUI(self, par=None):
+		global a
+		self.curUrl="http://www.google.co.in"
+		self.menuBar=self.menuBar()
+		self.toolBar=self.addToolBar('Search Bar')
+		self.toolBar.setMovable(False)
+		self.toolBar.setFloatable(False)
+		self.web=webView()
+		self.setCentralWidget(self.web)
+		self.statusBar=self.statusBar()
+		self.statusBar.showMessage("Ready!!!")
+		self.updateMenuBar(par)
+		self.updateToolBar()
+		#TO AUTOMATICALLY CHANGE THE URL
+		self.connect(self.web, SIGNAL("urlChanged(QUrl)"), self.loading)
+		#GIVE FOCUS TO SEARCH CTRL + L
+		self.searchFocusAction=QAction(QIcon('no.png'),"Search",self)
+		self.searchFocusAction.setShortcut('Ctrl+L')
+		self.connect(self.searchFocusAction,SIGNAL("triggered()"),self.searchInvoke)
+		self.addAction(self.searchFocusAction)
+
+	def updateMenuBar(self, par=None):
+		self.fileMenu=self.menuBar.addMenu('&File')
+		#NEW WINDOW
+		#self.newWindowAction=QAction(QIcon('newWindow.png'),'&New Window',self)
+		#self.newWindowAction.setShortcut('Ctrl+N')
+		#self.fileMenu.addAction(self.newWindowAction)
+		#self.connect(self.newWindowAction,SIGNAL('triggered()'),self.newWindow)
+
+		#PRINT PREVIEW
+		self.printPreviewAction=QAction(QIcon('preview.png'),'&Print Preview',self)
+		self.printPreviewAction.setShortcut('Ctrl+P')
+		self.connect(self.printPreviewAction, SIGNAL("triggered()"),self.printPreview)
+		self.fileMenu.addAction(self.printPreviewAction)
+		self.menuBar.addMenu('&Edit')
+		self.menuBar.addMenu('&View')
+
+	def updateToolBar(self):
+		#BACK ACTION
+		self.backAction=QAction(QIcon('back.png'),'&Back',self)
+		self.backAction.setShortcut('Ctrl+E')
+		self.toolBar.addAction(self.backAction)
+		self.connect(self.backAction, SIGNAL("triggered()"), self.web.back)
+		#FORWARD ACTION
+		self.forwardAction=QAction(QIcon('forward.png'),'&Forward',self)
+		self.forwardAction.setShortcut('Ctrl+U')
+		self.toolBar.addAction(self.forwardAction)
+		self.connect(self.forwardAction, SIGNAL("triggered()"), self.web.forward)
+		#RELOAD ACTION
+		self.reloadAction=QAction(QIcon('reload.png'),'&Reload',self)
+		self.reloadAction.setShortcut('Ctrl+R')
+		self.toolBar.addAction(self.reloadAction)
+		self.connect(self.reloadAction, SIGNAL("triggered()"), self.reload)
+		#SEARCH BAR
+		self.searchBox=QLineEdit('Start Your Search Here',self)
+		self.connect(self.searchBox, SIGNAL('returnPressed()'), self.search)
+		self.searchLineAction = QWidgetAction(self)
+		self.searchLineAction.setDefaultWidget(self.searchBox)
+		self.toolBar.addAction(self.searchLineAction)
+
+	def search(self):
+		self.curUrl=self.searchBox.text()
+		if "www." not in self.curUrl:
+			self.curUrl="www."+self.curUrl
+		if ".com" not in self.curUrl:
+			self.curUrl=self.curUrl+".com"
+		if "http://" not in self.curUrl:
+			self.curUrl="http://"+self.curUrl
+		self.searchBox.setText(self.curUrl)
+		self.web.load(QUrl(self.curUrl))
+
+	def reload(self):
+		self.web.load(QUrl(self.curUrl))
+		self.searchBox.setText(self.curUrl)
+
+	def printPreview(self):
+		preview=QPrintPreviewDialog()
+		preview.paintRequested.connect(lambda p: self.web.print_(p))
+		preview.exec_()
+
+	def loading(self, url):
+		self.searchBox.setText(url.toString())
+		self.connect(self.web,SIGNAL("loadProgress(int)"),self.showprog)
+
+	def showprog(self,x):
+		if x!=100:
+			self.statusBar.showMessage("Loading "+str(x)+"%")
+		else:
+			self.statusBar.showMessage("Ready!!!")
+
+	def searchInvoke(self):
+		self.searchBox.selectAll()
+		self.searchBox.setFocus()
+
+def main():
+	window=tab()
+	window.show()
+	sys.exit(app.exec_())
+main()
